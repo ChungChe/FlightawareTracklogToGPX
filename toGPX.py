@@ -6,6 +6,8 @@ import sys
 from bs4 import BeautifulSoup
 import codecs
 
+step = 10000.0
+
 def parse_gps_position(sp, name):
 	data = []
 	result1 = sp.find_all(lambda tag: tag.name == 'tr' and tag.get('class') ==  [name])
@@ -22,12 +24,12 @@ def parse_gps_position(sp, name):
 	return data
 
 def plot2gpx(x, y):
-	print("      <trkpt lat=\"" + str(float(x/1000.0)) + "\" lon=\"" + str(float(y/1000.0)) + "\"></trkpt>")
+	print("      <trkpt lat=\"" + str(float(x/step)) + "\" lon=\"" + str(float(y/step)) + "\"></trkpt>")
 
 def plot2svg(x, y):
-	print('<circle cx="{0}" cy="{1}" r="1" stroke="black" stroke-width"1" fill="red" />'.format(x, y))
+	print('<circle cx="{1}" cy="{0}" r="10000" stroke="black" stroke-width"500" fill="red" />'.format(x, y))
 
-def bresenham_line(x0, y0, x1, y1):
+def bresenham_line(x0, y0, x1, y1, flag):
 	steep = abs(y1- y0) > abs(x1 -x0)
 	if steep:
 		# swap x0 y0
@@ -48,37 +50,49 @@ def bresenham_line(x0, y0, x1, y1):
 		ystep = 1
 	for x in range(x0, x1):
 		if steep:
-			plot2gpx(y, x)
+			if flag:
+				plot2gpx(y, x)
+			else:
+				plot2svg(y, x)
 		else:
-			plot2gpx(x, y)
+			if flag:
+				plot2gpx(x, y)
+			else:
+				plot2svg(x, y)
 		error -= deltay
 		if error < 0:
 			y += ystep
 			error += deltax
 
-def gpx_lol(ary):
+def gpx_lol(ary, enable_inter):
 	print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
 	print("<gpx>")
 	print("  <trk><name>GG</name><src>tracelog to gps</src>")
 	print("    <trkseg>")
 	for i in range(0, len(ary) - 1):
-		x0 = int(float(ary[i][1]) * 1000)
-		y0 = int(float(ary[i][2]) * 1000)
-		x1 = int(float(ary[i+1][1]) * 1000)
-		y1 = int(float(ary[i+1][2]) * 1000)
-		bresenham_line(x0, y0, x1, y1)
+		x0 = int(float(ary[i][1]) * step)
+		y0 = int(float(ary[i][2]) * step)
+		x1 = int(float(ary[i+1][1]) * step)
+		y1 = int(float(ary[i+1][2]) * step)
+		if (enable_inter):
+			bresenham_line(x0, y0, x1, y1, True)
+		else:
+			plot2gpx(x0, y0)
 	print("    </trkseg>")
 	print("  </trk>")
 	print("</gpx>")
 
-def svg_lol(ary, minX, minY, maxX, maxY):
-	print('<svg width="800" height="600" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
+def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
+	print('<svg width="1920" height="1080" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
 	for i in range(0, len(ary) - 1):
-		x0 = int(float(ary[i][1]) * 1000)
-		y0 = int(float(ary[i][2]) * 1000)
-		x1 = int(float(ary[i+1][1]) * 1000)
-		y1 = int(float(ary[i+1][2]) * 1000)
-		bresenham_line(x0, y0, x1, y1)
+		x0 = int(float(ary[i][1]) * step)
+		y0 = int(float(ary[i][2]) * step)
+		x1 = int(float(ary[i+1][1]) * step)
+		y1 = int(float(ary[i+1][2]) * step)
+		if enable_inter:
+			bresenham_line(x0, y0, x1, y1, False)
+		else:
+			plot2svg(x0, y0)
 	print("</svg>")
 
 def main(filename):
@@ -100,8 +114,8 @@ def main(filename):
 
 	for i in range(0, len(data), 3):
 		tup = (str(data[i]), str(data[i+1]), str(data[i+2]))
-		x = int(float(data[i+1]) * 1000)
-		y = int(float(data[i+2]) * 1000)
+		x = int(float(data[i+1]) * step)
+		y = int(float(data[i+2]) * step)
 		if x < minX:
 			minX = x
 		if y < minY:
@@ -112,8 +126,8 @@ def main(filename):
 			maxY = y
 		ary.append(tup)
 	ary.sort()
-	gpx_lol(ary)
-	#svg_lol(ary, minX, minY, maxX, maxY)
+#gpx_lol(ary, False)
+	svg_lol(ary, minX, minY, maxX, maxY, False)
 
 	f.close()
 
