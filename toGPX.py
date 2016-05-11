@@ -32,8 +32,7 @@ def parse_gps_position(sp, name):
 	return data
 
 def plot2gpx(x, y):
-	pass
-	#print('      <trkpt lat="{0}" lon="{1}"></trkpt>'.format(float(y/step), float(x/step)))
+	print('      <trkpt lat="{0}" lon="{1}"></trkpt>'.format(float(y/step), float(x/step)))
 
 def plot2svg(x, y):
 	print('<g><circle cx="{0}" cy="{1}" r="2000" stroke="black" stroke-width"500" fill="red"></circle></g>'.format(x, y))
@@ -92,7 +91,7 @@ def gen_gpx(ary, enable_inter):
 		if (enable_inter):
 			if x0 * x1 < 0 and x0 != x1:
 				y2 = ((x1 - 180) * y0 - (x0 + 180) * y1) / (x1 - x0 - 360)
-				print('      y2 = {0}'.format(y2))
+				#print('      y2 = {0}'.format(y2))
 				if x0 < 0:
 					#print('87 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1)) 
 					# (x1, y1) <-- (180, y2) <-- (-x0, y0)
@@ -216,7 +215,7 @@ var path = svg.append('path')
 	print("</svg></body></html>")
 
 def main(filename):
-	use_gpx = False
+	use_gpx = True 
 
 	f = codecs.open(filename, "r", "utf-8")
 	if f == None:
