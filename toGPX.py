@@ -104,6 +104,17 @@ def gpx_lol(ary, enable_inter):
 	print("  </trk>")
 	print("</gpx>")
 
+'''
+Try to generate the string like this:
+
+var data = [
+  {x:10,y:10},
+  {x:50,y:100},
+  {x:60,y:50},
+  {x:100,y:30}
+];
+
+'''
 def get_svg_data(ary):
 	head = 'var data = ['
 	tail = '];'
@@ -120,6 +131,13 @@ def get_svg_data(ary):
 		else:
 			body += '{{x: {0}, y: {1}}},'.format(new_x0, y0)
 	return head + body + tail
+
+def normailize(x):
+	if x <= 0:
+		new_x = x + 1800000
+	else:
+		new_x = x - 1800000
+	return new_x
 
 def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
 	# Hack time!	
@@ -151,7 +169,6 @@ var svg = d3.select('body')
     .attr("height", height)
 	.attr("viewBox", 
 	""" + '"{0} {1} {2} {3}"'.format(minX, minY, maxX-minX, maxY-minY) + """)
-    .call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", zoom))
 
 var line = d3.svg.line()
 	.x(function(d) {
@@ -169,14 +186,6 @@ var path = svg.append('path')
 		'fill': 'none'
 	});
 
-svg.selectAll("line")
-  .enter().append("line")
-    .attr("transform", function(d) { return "translate(" + d + ")"; });
-
-function zoom() {
-  svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-}
-
 </script>	
 	"""
 	print(html_header)
@@ -187,15 +196,8 @@ function zoom() {
 		x0 = int(float(ary[i][2]) * step)
 		y1 = int(float(ary[i+1][1]) * step)
 		x1 = int(float(ary[i+1][2]) * step)
-		
-		if x0 < 0:
-			new_x0 = x0 + 1800000
-		else:
-			new_x0 = x0 - 1800000
-		if x1 < 0:
-			new_x1 = x1 + 1800000
-		else:
-			new_x1 = x1 - 1800000
+		new_x0 = normailize(x0)
+		new_x1 = normailize(x1)	
 		
 		if enable_inter:
 			bresenham_line(new_x0, y0, new_x1, y1, False)
@@ -225,11 +227,8 @@ def main(filename):
 		tup = (str(data[i]), str(data[i+1]), str(data[i+2]))
 		y = int(float(data[i+1]) * step)
 		x = int(float(data[i+2]) * step)
-		
-		if x < 0:
-			new_x = x + 1800000
-		else:
-			new_x = x - 1800000
+	    
+		new_x = normailize(x)	
 
 		if new_x < minX:
 			minX = new_x
