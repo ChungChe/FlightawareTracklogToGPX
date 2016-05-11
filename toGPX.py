@@ -115,12 +115,13 @@ var data = [
 ];
 
 '''
-def get_svg_data(ary):
+def get_svg_data(ary, minY, maxY):
 	head = 'var data = ['
 	tail = '];'
 	body = ''
+	magic = (maxY + minY) / step
 	for i in range(0, len(ary)):
-		y0 = float(ary[i][1])
+		y0 = magic - float(ary[i][1])
 		x0 = float(ary[i][2])
 		if x0 < 0:
 			new_x0 = x0 + 180.0
@@ -161,7 +162,7 @@ def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
 var width = 1280,
     height = 300;
 
-	""" + get_svg_data(ary) + """
+	""" + get_svg_data(ary, minY, maxY) + """
 
 var svg = d3.select('body')
 	.append('svg')
@@ -191,10 +192,10 @@ var path = svg.append('path')
 	print(html_header)
 	print('<svg width="1280" height="300" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
 	for i in range(0, len(ary) - 1):
-
-		y0 = int(float(ary[i][1]) * step)
+		magic = maxY + minY
+		y0 = magic - int(float(ary[i][1]) * step)
 		x0 = int(float(ary[i][2]) * step)
-		y1 = int(float(ary[i+1][1]) * step)
+		y1 = magic - int(float(ary[i+1][1]) * step)
 		x1 = int(float(ary[i+1][2]) * step)
 		new_x0 = normailize(x0)
 		new_x1 = normailize(x1)	
