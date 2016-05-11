@@ -24,15 +24,18 @@ def parse_gps_position(sp, name):
 	return data
 
 def plot2gpx(x, y):
-	#pass
-	#print("      <trkpt lat=\"" + str(float(y/step)) + "\" lon=\"" + str(float(x/step)) + "\"></trkpt>")
-	print('      <trkpt lat="{0}" lon="{1}"></trkpt>'.format(float(y/step), float(x/step)))
+	pass
+	#print('      <trkpt lat="{0}" lon="{1}"></trkpt>'.format(float(y/step), float(x/step)))
 
 def plot2svg(x, y):
-	print('<circle cx="{0}" cy="{1}" r="10000" stroke="black" stroke-width"500" fill="red" />'.format(x, y))
+	print('<circle cx="{0}" cy="{1}" r="3000" stroke="black" stroke-width"500" fill="red" />'.format(x, y))
 
 def bresenham_line(x0, y0, x1, y1, flag):
-	#print('draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1)) 
+	#print('    34 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1))
+	if flag == False:
+		if x0 * x1 > 0:
+			print('<line x1="{0}" y1="{1}" x2="{2}" y2="{3}" style="stroke:rgb(0,0,255);stroke-width:1000" />'.format(x0, y0, x1, y1))	
+
 	steep = abs(y1- y0) > abs(x1 -x0)
 	if steep:
 		# swap x0 y0
@@ -58,13 +61,15 @@ def bresenham_line(x0, y0, x1, y1, flag):
 			if flag:
 				plot2gpx(y, x)
 			else:
-				plot2svg(y, x)
+				pass
+				#plot2svg(y, x)
 		else:
 			#print('x={0}, y={1}'.format(x, y)) 
 			if flag:
 				plot2gpx(x, y)
 			else:
-				plot2svg(x, y)
+				pass
+				#plot2svg(x, y)
 		error -= deltay
 		if error < 0:
 			y += ystep
@@ -83,14 +88,21 @@ def gpx_lol(ary, enable_inter):
 	 	gg = int(180.0 * step)
 		if (enable_inter):
 			if x0 * x1 < 0 and x0 != x1:
-				y2 = ((y1 - y0) * (x1 - 180) - (x1 - x0) * y1) / (x0 - x1)
+				#y2 = ((y1 - y0) * (x1 - 180) - (x1 - x0) * y1) / (x0 - x1)
+				y2 = ((x1 - 180) * y0 - (x0 + 180) * y1) / (x1 - x0 - 360)
+				print('      y2 = {0}'.format(y2))
 				if x0 < 0:
-					bresenham_line(x0, y0, int(-179.9999 * step), y2, True)
-					bresenham_line(gg, y2, x1, y1, True)
+					#print('87 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1)) 
+					# (x1, y1) <-- (180, y2) <-- (-x0, y0)
+					bresenham_line(int(-179.9999 * step), y2, x0, y0, True)
+					bresenham_line(x1, y1, gg, y2, True)
 				else:
+					#print('92 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1)) 
+					# (x0, y0) --> (180, y2) --> (-x1, y1)
 					bresenham_line(x0, y0, gg, y2, True)
 					bresenham_line(int(-179.9999 * step), y2, x1, y1, True)
 			else:
+				#print('97 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1)) 
 				bresenham_line(x0, y0, x1, y1, True)
 		else:
 			plot2gpx(x0, y0)
@@ -101,6 +113,11 @@ def gpx_lol(ary, enable_inter):
 def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
 	print('<svg width="1920" height="1080" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
 	for i in range(0, len(ary) - 1):
+		if x0 < 0:
+			new_x0 = 180.0 + float(x0)
+		else:
+			new_x0 = 180.0 - float(x0)
+
 		y0 = int(float(ary[i][1]) * step)
 		x0 = int(float(ary[i][2]) * step)
 		y1 = int(float(ary[i+1][1]) * step)
@@ -143,8 +160,8 @@ def main(filename):
 		ary.append(tup)
 	ary.sort()
 	enable_inter = True
-	gpx_lol(ary, enable_inter)
-	#svg_lol(ary, minX, minY, maxX, maxY, False)
+	#gpx_lol(ary, enable_inter)
+	svg_lol(ary, minX, minY, maxX, maxY, True)
 
 	f.close()
 
