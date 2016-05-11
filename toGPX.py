@@ -1,7 +1,15 @@
 # Flightaware tracklog to gpx
-# use wget to get tracklog
-# http://flightaware.com/live/flight/EVA7/history/20160508/0800Z/KSFO/RCTP/tracklog
-# python toGPX tracklog > output.gpx 
+# 1. Use wget to get tracklog
+# e.g.
+#	wget http://flightaware.com/live/flight/EVA7/history/20160508/0800Z/KSFO/RCTP/tracklog
+# To generate gpx file
+# set use_gpx = True to generate gpx file
+# e.g 
+#	python toGPX.py tracklog > output.gpx 
+# if use_gpx = False
+# e.g 
+#	python toGPX.py tracklog > output.html
+
 import sys
 from bs4 import BeautifulSoup
 import codecs
@@ -70,7 +78,7 @@ def bresenham_line(x0, y0, x1, y1, flag):
 			y += ystep
 			error += deltax
 
-def gpx_lol(ary, enable_inter):
+def gen_gpx(ary, enable_inter):
 	print("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
 	print("<gpx>")
 	print("  <trk><name>GG</name><src>tracelog to gps</src>")
@@ -140,7 +148,7 @@ def normailize(x):
 		new_x = x - 1800000
 	return new_x
 
-def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
+def gen_html(ary, minX, minY, maxX, maxY, enable_inter):
 	# Hack time!	
 	html_header = """
 <!DOCTYPE html>
@@ -208,6 +216,8 @@ var path = svg.append('path')
 	print("</svg></body></html>")
 
 def main(filename):
+	use_gpx = False
+
 	f = codecs.open(filename, "r", "utf-8")
 	if f == None:
 		exit(0)
@@ -243,8 +253,10 @@ def main(filename):
 
 	ary.sort()
 	enable_inter = True
-	#gpx_lol(ary, enable_inter)
-	svg_lol(ary, minX, minY, maxX, maxY, True)
+	if use_gpx:
+		gen_gpx(ary, enable_inter)
+	else:
+		gen_html(ary, minX, minY, maxX, maxY, enable_inter)
 
 	f.close()
 
