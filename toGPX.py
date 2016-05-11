@@ -28,8 +28,9 @@ def plot2gpx(x, y):
 	#print('      <trkpt lat="{0}" lon="{1}"></trkpt>'.format(float(y/step), float(x/step)))
 
 def plot2svg(x, y):
-	print('<circle cx="{0}" cy="{1}" r="3000" stroke="black" stroke-width"500" fill="red" />'.format(x, y))
+	print('<g><circle cx="{0}" cy="{1}" r="2000" stroke="black" stroke-width"500" fill="red"></circle></g>'.format(x, y))
 
+# x0 y0 x1 y1 should be integer
 def bresenham_line(x0, y0, x1, y1, flag):
 	#print('    34 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1))
 	if flag == False:
@@ -60,16 +61,10 @@ def bresenham_line(x0, y0, x1, y1, flag):
 			#print('x={0}, y={1}'.format(y, x)) 
 			if flag:
 				plot2gpx(y, x)
-			else:
-				pass
-				#plot2svg(y, x)
 		else:
 			#print('x={0}, y={1}'.format(x, y)) 
 			if flag:
 				plot2gpx(x, y)
-			else:
-				pass
-				#plot2svg(x, y)
 		error -= deltay
 		if error < 0:
 			y += ystep
@@ -88,7 +83,6 @@ def gpx_lol(ary, enable_inter):
 	 	gg = int(180.0 * step)
 		if (enable_inter):
 			if x0 * x1 < 0 and x0 != x1:
-				#y2 = ((y1 - y0) * (x1 - 180) - (x1 - x0) * y1) / (x0 - x1)
 				y2 = ((x1 - 180) * y0 - (x0 + 180) * y1) / (x1 - x0 - 360)
 				print('      y2 = {0}'.format(y2))
 				if x0 < 0:
@@ -110,23 +104,105 @@ def gpx_lol(ary, enable_inter):
 	print("  </trk>")
 	print("</gpx>")
 
-def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
-	print('<svg width="1920" height="1080" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
-	for i in range(0, len(ary) - 1):
+def get_svg_data(ary):
+	head = 'var data = ['
+	tail = '];'
+	body = ''
+	for i in range(0, len(ary)):
+		y0 = float(ary[i][1])
+		x0 = float(ary[i][2])
 		if x0 < 0:
-			new_x0 = 180.0 + float(x0)
+			new_x0 = x0 + 180.0
 		else:
-			new_x0 = 180.0 - float(x0)
+			new_x0 = x0 - 180.0
+		if i == len(ary) - 1:
+			body += '{{x: {0}, y: {1}}}'.format(new_x0, y0)
+		else:
+			body += '{{x: {0}, y: {1}}},'.format(new_x0, y0)
+	return head + body + tail
+
+def svg_lol(ary, minX, minY, maxX, maxY, enable_inter):
+	# Hack time!	
+	html_header = """
+<!DOCTYPE html>
+<html>
+<meta charset="utf-8">
+<title>Zoom + Pan</title>
+<style>
+
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+
+</style>
+<body>
+<script src="//d3js.org/d3.v3.min.js"></script>
+<script>
+
+var width = 1280,
+    height = 300;
+
+	""" + get_svg_data(ary) + """
+
+var svg = d3.select('body')
+	.append('svg')
+    .attr("width", width)
+    .attr("height", height)
+	.attr("viewBox", 
+	""" + '"{0} {1} {2} {3}"'.format(minX, minY, maxX-minX, maxY-minY) + """)
+    .call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", zoom))
+
+var line = d3.svg.line()
+	.x(function(d) {
+		return d.x * 10000.0;
+	})
+	.y(function(d) {
+		return d.y * 10000.0;
+	});
+
+var path = svg.append('path')
+	.attr({
+		'd': line(data),
+		'stroke': '#F00',
+		'stroke-width': '1000px',
+		'fill': 'none'
+	});
+
+svg.selectAll("line")
+  .enter().append("line")
+    .attr("transform", function(d) { return "translate(" + d + ")"; });
+
+function zoom() {
+  svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
+
+</script>	
+	"""
+	print(html_header)
+	print('<svg width="1280" height="300" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
+	for i in range(0, len(ary) - 1):
 
 		y0 = int(float(ary[i][1]) * step)
 		x0 = int(float(ary[i][2]) * step)
 		y1 = int(float(ary[i+1][1]) * step)
 		x1 = int(float(ary[i+1][2]) * step)
-		if enable_inter:
-			bresenham_line(x0, y0, x1, y1, False)
+		
+		if x0 < 0:
+			new_x0 = x0 + 1800000
 		else:
-			plot2svg(x0, y0)
-	print("</svg>")
+			new_x0 = x0 - 1800000
+		if x1 < 0:
+			new_x1 = x1 + 1800000
+		else:
+			new_x1 = x1 - 1800000
+		
+		if enable_inter:
+			bresenham_line(new_x0, y0, new_x1, y1, False)
+			plot2svg(new_x0, y0)
+		else:
+			plot2svg(new_x0, y0)
+	print("</svg></body></html>")
 
 def main(filename):
 	f = codecs.open(filename, "r", "utf-8")
@@ -149,15 +225,22 @@ def main(filename):
 		tup = (str(data[i]), str(data[i+1]), str(data[i+2]))
 		y = int(float(data[i+1]) * step)
 		x = int(float(data[i+2]) * step)
-		if x < minX:
-			minX = x
+		
+		if x < 0:
+			new_x = x + 1800000
+		else:
+			new_x = x - 1800000
+
+		if new_x < minX:
+			minX = new_x
 		if y < minY:
 			minY = y
-		if x > maxX:
-			maxX = x
+		if new_x > maxX:
+			maxX = new_x
 		if y > maxY:
 			maxY = y
 		ary.append(tup)
+
 	ary.sort()
 	enable_inter = True
 	#gpx_lol(ary, enable_inter)
