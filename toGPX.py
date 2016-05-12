@@ -34,15 +34,15 @@ def parse_gps_position(sp, name):
 def plot2gpx(x, y):
 	print('      <trkpt lat="{0}" lon="{1}"></trkpt>'.format(float(y/step), float(x/step)))
 
-def plot2svg(x, y):
-	print('<g><circle cx="{0}" cy="{1}" r="2000" stroke="black" stroke-width"500" fill="red"></circle></g>'.format(x, y))
+def plot2svg(x, y, size, color):
+	print('<g><circle cx="{0}" cy="{1}" r="{2}" stroke="black" fill={3}></circle></g>'.format(x, y, size, color))
 
 # x0 y0 x1 y1 should be integer
 def bresenham_line(x0, y0, x1, y1, flag):
 	#print('    34 draw ({0}, {1}) to ({2}, {3})'.format(x0, y0, x1, y1))
-	if flag == False:
-		if x0 * x1 > 0:
-			print('<line x1="{0}" y1="{1}" x2="{2}" y2="{3}" style="stroke:rgb(0,0,255);stroke-width:1000" />'.format(x0, y0, x1, y1))	
+	#if flag == False:
+	#	if x0 * x1 >= 0:
+	#		print('<line x1="{0}" y1="{1}" x2="{2}" y2="{3}" style="stroke:rgb(0,0,255);stroke-width:1000" />'.format(x0, y0, x1, y1))	
 
 	steep = abs(y1- y0) > abs(x1 -x0)
 	if steep:
@@ -68,10 +68,14 @@ def bresenham_line(x0, y0, x1, y1, flag):
 			#print('x={0}, y={1}'.format(y, x)) 
 			if flag:
 				plot2gpx(y, x)
+			else:
+				plot2svg(y, x, 1000, "green")
 		else:
 			#print('x={0}, y={1}'.format(x, y)) 
 			if flag:
 				plot2gpx(x, y)
+			else:
+				plot2svg(x, y, 1000, "green")
 		error -= deltay
 		if error < 0:
 			y += ystep
@@ -163,7 +167,7 @@ def gen_html(ary, minX, minY, maxX, maxY, enable_inter):
 
 </style>
 <body>
-<script src="//d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
 <script>
 
 var width = 1280,
@@ -198,20 +202,41 @@ var path = svg.append('path')
 	"""
 	print(html_header)
 	print('<svg width="1280" height="300" viewbox="{0} {1} {2} {3}">'.format(str(minX), str(minY), str(maxX-minX), str(maxY-minY)))
+	print('<line x1="{0}" y1="{1}" x2="{2}" y2="{3}" style="stroke:rgb(0,255,0);stroke-width:2000" />'.format(0, minY, 0, maxY))	
+	magic = maxY + minY
 	for i in range(0, len(ary) - 1):
-		magic = maxY + minY
 		y0 = magic - int(float(ary[i][1]) * step)
 		x0 = int(float(ary[i][2]) * step)
 		y1 = magic - int(float(ary[i+1][1]) * step)
 		x1 = int(float(ary[i+1][2]) * step)
+		#print('x0: {0}, x1: {1}'.format(x0, x1))
 		new_x0 = normailize(x0)
 		new_x1 = normailize(x1)	
+		#print('new_x0: {0}, new_x1: {1}'.format(new_x0, new_x1))
+	 	gg = int(normailize(180.0 * step))
 		
 		if enable_inter:
-			bresenham_line(new_x0, y0, new_x1, y1, False)
-			plot2svg(new_x0, y0)
-		else:
-			plot2svg(new_x0, y0)
+			if new_x0 * new_x1 < 0 and new_x0 != new_x1:
+				y2 = ((x1 - 180) * y0 - (x0 + 180) * y1) / (x1 - x0 - 360)
+				if x0 < 0:
+					#print('216 draw ({0}, {1}) to ({2}, {3})'.format(new_x0, y0, new_x1, y1)) 
+					# (x1, y1) <-- (180, y2) <-- (-x0, y0)
+					bresenham_line(int(normailize(-179.9999 * step)), y2, new_x0, y0, False)
+					bresenham_line(new_x1, y1, gg, y2, True)
+				else:
+					#print('221 draw ({0}, {1}) to ({2}, {3})'.format(new_x0, y0, new_x1, y1)) 
+					# (x0, y0) --> (180, y2) --> (-x1, y1)
+					bresenham_line(new_x0, y0, gg, y2, True)
+					bresenham_line(int(normailize(-179.9999 * step)), y2, new_x1, y1, False)
+			else:
+				#print('226 draw ({0}, {1}) to ({2}, {3})'.format(new_x0, y0, new_x1, y1)) 
+				bresenham_line(new_x0, y0, new_x1, y1, False)
+
+		plot2svg(new_x0, y0, 2000, "red")
+				
+	new_y1 = magic - int(float(ary[len(ary)-1][1]) * step)
+	new_x1 = int(float(ary[len(ary)-1][2]) * step)
+	plot2svg(new_x1, new_y1, 2000, "red")
 	print("</svg></body></html>")
 
 def main(filename):
