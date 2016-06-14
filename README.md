@@ -1,4 +1,5 @@
-# 開圖狗
+# SkyToGo
+# 死開圖狗
 
 Flightaware tracelog to gpx
 
